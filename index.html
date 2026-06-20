@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>思迹 — AI 成长导师</title>
+<style>
+:root {
+  --bg:#0f172a;--surface:#1e293b;--surface2:#263548;--text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
+  --accent:#3b82f6;--accent2:#1d4ed8;--accent3:#1e3a5f;--danger:#ef4444;--success:#10b981;--warn:#f59e0b;
+  --border:#334155;--glow:rgba(59,130,246,.25);--radius:14px;--radius-sm:10px;
+  --font:-apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans SC","Helvetica Neue",sans-serif;
+  --t:0.3s cubic-bezier(0.4,0,0.2,1)
+}
+[data-theme="light"] {
+  --bg:#f0f4f8;--surface:#fff;--surface2:#e2ebf5;--text:#0f172a;--text2:#475569;--text3:#94a3b8;
+  --accent:#3b82f6;--accent2:#2563eb;--accent3:#dbeafe;--border:#cbd5e1;--glow:rgba(59,130,246,.15)
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;-webkit-tap-highlight-color:transparent}
+body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh;display:flex;justify-content:center;transition:background var(--t),color var(--t)}
+#app{width:100%;max-width:480px;padding:0 16px;padding-bottom:76px;position:relative}
+.app-header{display:flex;align-items:center;justify-content:space-between;padding:14px 0 8px;position:sticky;top:0;background:var(--bg);z-index:10;transition:background var(--t)}
+.app-header h1{font-size:1.2rem;font-weight:700;color:var(--accent);letter-spacing:.04em}
+.hdr-right{display:flex;align-items:center;gap:6px}
+.date-badge{font-size:.68rem;color:var(--text2);background:var(--surface2);padding:3px 10px;border-radius:14px;font-weight:500}
+.icon-btn{background:var(--surface2);border:none;width:32px;height:32px;border-radius:50%;font-size:.9rem;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text2);transition:background var(--t),transform .15s}
+.icon-btn:active{transform:scale(.9)}
+.tab{display:none;padding-top:4px;animation:fadeIn .22s ease}
+.tab.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(239,68,68,.5)}50%{box-shadow:0 0 0 16px rgba(239,68,68,0)}100%{box-shadow:0 0 0 0 rgba(239,68,68,0)}}
+@keyframes recDot{0%,100%{opacity:1}50%{opacity:.2}}
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;display:flex;background:var(--surface);border-top:1px solid var(--border);padding:3px 0 env(safe-area-inset-bottom,3px);z-index:100;transition:background var(--t),border var(--t)}
+.nav-btn{flex:1;background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:1px;padding:3px 0;cursor:pointer;color:var(--text3);transition:color var(--t);font-family:var(--font)}
+.nav-btn .nav-icon{font-size:1.2rem;line-height:1}
+.nav-btn .nav-label{font-size:.58rem;font-weight:500}
+.nav-btn.active{color:var(--accent)}.nav-btn:active{opacity:.6}
+.section-title{font-size:.78rem;font-weight:600;color:var(--text2);margin:14px 0 8px;display:flex;align-items:center;gap:5px}
+.btn-p{background:var(--accent);color:#fff;border:none;padding:9px 20px;border-radius:var(--radius-sm);font-size:.85rem;font-weight:600;cursor:pointer;font-family:var(--font);transition:opacity .2s,transform .15s;box-shadow:0 2px 10px var(--glow)}
+.btn-p:active{transform:scale(.96);opacity:.85}
+.btn-p:disabled{opacity:.3;cursor:default;transform:none;box-shadow:none}
+.btn-s{background:var(--surface2);color:var(--text);border:1px solid var(--border);padding:9px 20px;border-radius:var(--radius-sm);font-size:.85rem;font-weight:500;cursor:pointer;font-family:var(--font);transition:background var(--t),transform .15s}
+.btn-s:active{transform:scale(.96)}
+.btn-d{background:none;border:1px solid var(--danger);color:var(--danger);padding:7px 14px;border-radius:var(--radius-sm);font-size:.8rem;cursor:pointer;font-family:var(--font)}
+.btn-d:active{background:var(--danger);color:#fff}
+.toast{position:fixed;top:18px;left:50%;transform:translateX(-50%);background:var(--surface);color:var(--text);padding:10px 22px;border-radius:var(--radius-sm);box-shadow:0 4px 20px rgba(0,0,0,.25);z-index:300;font-size:.85rem;font-weight:500;opacity:0;transition:opacity .3s;pointer-events:none;border:1px solid var(--border)}
+.toast.show{opacity:1}
+/* ===== Capture ===== */
+.capture-area{display:flex;flex-direction:column;align-items:center;gap:16px;padding-top:16px}
+.capture-btn-wrapper{position:relative;display:inline-flex;align-items:center;justify-content:center}
+.capture-btn{width:88px;height:88px;border-radius:50%;border:2px solid var(--accent);background:var(--surface);font-size:2.4rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all var(--t);box-shadow:0 0 20px var(--glow);position:relative}
+.capture-btn:active{transform:scale(.94)}
+.capture-btn.rec{background:var(--danger);border-color:var(--danger);animation:pulse 1.5s ease-in-out infinite}
+.capture-btn.rec .rec-badge{display:block}
+.rec-badge{display:none;position:absolute;bottom:-22px;left:50%;transform:translateX(-50%);font-size:.6rem;color:var(--danger);font-weight:700;letter-spacing:.08em;animation:recDot 1s ease-in-out infinite;white-space:nowrap}
+.capture-status{font-size:.8rem;color:var(--text2);min-height:1.3em;text-align:center;display:flex;align-items:center;justify-content:center;gap:5px}
+.capture-status.act{color:var(--danger)}
+.capture-status .cd{display:none;width:7px;height:7px;border-radius:50%;background:var(--danger);animation:recDot 1s ease-in-out infinite}
+.capture-status.act .cd{display:inline-block}
+.transcript-box{width:100%;min-height:48px;max-height:140px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;font-size:.9rem;line-height:1.7;color:var(--text);overflow-y:auto;white-space:pre-wrap;transition:background var(--t),border var(--t);resize:none}
+.transcript-box:focus{outline:none;border-color:var(--accent)}
+.transcript-box.rec-active{border-color:var(--danger)}
+.capture-note-row{width:100%;display:flex;gap:8px}
+.capture-note-row textarea{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 12px;font-size:.85rem;color:var(--text);font-family:var(--font);resize:none;min-height:40px;transition:background var(--t),border var(--t)}
+.capture-note-row textarea:focus{outline:none;border-color:var(--accent)}.capture-note-row textarea::placeholder{color:var(--text3)}
+.capture-recent{width:100%;margin-top:8px}
+.capture-recent .rl{font-size:.68rem;color:var(--text3);margin-bottom:5px}
+.me{display:flex;align-items:flex-start;gap:7px;padding:7px 0;border-bottom:1px solid var(--border);font-size:.8rem}
+.me .met{color:var(--text3);font-size:.65rem;white-space:nowrap;min-width:36px;margin-top:1px}
+.me .mex{color:var(--text);flex:1;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.me .meb{font-size:.55rem;padding:1px 6px;border-radius:6px;background:var(--accent3);color:var(--text2)}
+/* ===== Today ===== */
+.ts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:12px}
+.ts .sc{background:var(--surface);border-radius:var(--radius);padding:10px 6px;text-align:center;border:1px solid var(--border)}
+.ts .sc .tn{font-size:1.3rem;font-weight:700;color:var(--accent)}
+.ts .sc .tl{font-size:.62rem;color:var(--text2);margin-top:1px}
+.timeline{position:relative;padding-left:44px;margin-bottom:14px}
+.timeline::before{content:'';position:absolute;left:21px;top:0;bottom:0;width:1.5px;background:var(--border)}
+.tlh{position:relative;margin-bottom:2px;min-height:28px}
+.tlh .tlt{position:absolute;left:-44px;width:38px;text-align:right;font-size:.6rem;color:var(--text3);top:5px}
+.tlh .tld{position:absolute;left:-23px;top:7px;width:6px;height:6px;border-radius:50%;background:var(--border);border:2px solid var(--bg)}
+.tlh.he .tld{background:var(--accent);width:8px;height:8px;left:-24px;top:5px;border-color:var(--accent3)}
+.tlh .tlc{font-size:.78rem;color:var(--text2);padding:2px 0 2px 6px;line-height:1.5;min-height:24px;display:flex;align-items:center;border-radius:4px}
+.tlh .tlc:hover{background:var(--surface2)}
+.tlh .tlc.ht{color:var(--text)}
+.el{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.ec{background:var(--surface);border-radius:var(--radius);padding:10px 12px;border:1px solid var(--border)}
+.ec .ect{font-size:.65rem;color:var(--text3);margin-bottom:3px}
+.ec .ecx{font-size:.82rem;line-height:1.6;color:var(--text)}
+.ec .eca{display:flex;gap:6px;margin-top:5px;justify-content:flex-end}
+.ec .eca button{background:none;border:none;font-size:.72rem;color:var(--text3);cursor:pointer;padding:2px 6px;border-radius:4px}
+.ec .eca button:hover{background:var(--surface2)}
+.ec .eca .ecd{color:var(--danger)}
+.scatter-alert{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:10px;font-size:.78rem;color:var(--warn);line-height:1.6;animation:fadeIn .3s ease}
+/* ===== Goals ===== */
+.gh{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.gh h2{font-size:1rem;font-weight:600;display:flex;align-items:center;gap:5px}
+.gh .gb{font-size:.65rem;color:var(--text2);background:var(--accent3);padding:2px 8px;border-radius:10px}
+.gc{background:var(--surface);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px;border:1px solid var(--border);border-left:3px solid var(--accent)}
+.gc .gdim{font-size:.65rem;color:var(--text3);font-weight:600;letter-spacing:.02em;margin-bottom:1px}
+.gc .gct{font-size:.9rem;font-weight:600;margin-bottom:3px}
+.gc .gcd{font-size:.75rem;color:var(--text2);margin-bottom:6px;line-height:1.5}
+.gc .gbar{height:4px;background:var(--surface2);border-radius:2px;overflow:hidden}
+.gc .gbar .gf{height:100%;border-radius:2px;background:var(--accent);transition:width .6s ease}
+.gc .gbar .gf.c1{background:var(--success)}
+.gc .gbar .gf.c2{background:#8b5cf6}
+.gc .gbar .gf.c3{background:var(--warn)}
+.gc .gbar .gf.c4{background:#ec4899}
+.gc .gstat{font-size:.65rem;color:var(--text3);display:flex;justify-content:space-between;margin-top:3px}
+.ga-btn{width:100%;padding:10px;border:1.5px dashed var(--border);border-radius:var(--radius);background:none;color:var(--text3);font-size:.82rem;cursor:pointer;font-family:var(--font);transition:all .2s}
+.ga-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent3)}
+/* ===== Mentor ===== */
+.mentor-area{display:flex;flex-direction:column;height:calc(100vh - 150px);min-height:400px}
+.mentor-hero{text-align:center;padding:10px 0;flex-shrink:0}
+.mentor-av{width:48px;height:48px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;margin:0 auto 4px;font-size:1.4rem;box-shadow:0 4px 14px var(--glow)}
+.mentor-hero .mn{font-size:.85rem;font-weight:600}
+.mentor-hero .mt{font-size:.65rem;color:var(--text2)}
+.mentor-hero .ai-badge{font-size:.58rem;color:var(--success);background:rgba(16,185,129,.1);padding:1px 8px;border-radius:8px;display:inline-block;margin-top:2px}
+.mchat{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:6px 0;scroll-behavior:smooth}
+.mmsg{max-width:86%;padding:10px 14px;border-radius:14px;font-size:.82rem;line-height:1.7;animation:fadeIn .25s ease;white-space:pre-wrap}
+.mmsg.mm{background:var(--surface);border:1px solid var(--border);align-self:flex-start;border-bottom-left-radius:3px}
+.mmsg.mu{background:var(--accent);color:#fff;align-self:flex-end;border-bottom-right-radius:3px}
+.mmsg .mst{font-size:.55rem;color:var(--text3);margin-top:3px;text-align:right}
+.mmsg.mu .mst{color:rgba(255,255,255,.5)}
+.mqa{display:flex;gap:5px;flex-wrap:wrap;margin:4px 0;flex-shrink:0}
+.mqa button{font-size:.68rem;padding:4px 10px;border-radius:14px;border:1px solid var(--border);background:var(--surface);color:var(--text2);cursor:pointer;font-family:var(--font);transition:all .2s}
+.mqa button:hover{background:var(--accent3);border-color:var(--accent);color:var(--accent)}
+.mib{display:flex;gap:8px;padding:6px 0;flex-shrink:0;border-top:1px solid var(--border);align-items:flex-end}
+.mib textarea{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 12px;font-size:.82rem;color:var(--text);font-family:var(--font);resize:none;min-height:38px;max-height:68px;transition:background var(--t),border var(--t)}
+.mib textarea:focus{outline:none;border-color:var(--accent)}
+.mmic{width:40px;height:40px;border-radius:50%;border:2px solid var(--accent);background:var(--surface);font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;position:relative;box-shadow:0 0 10px var(--glow)}
+.mmic:active{transform:scale(.92)}
+.mmic.rec{background:var(--danger);border-color:var(--danger);animation:pulse 1.5s ease-in-out infinite}
+.mmic .mi{display:none;position:absolute;top:-5px;right:-5px;width:12px;height:12px;border-radius:50%;background:var(--danger);border:2px solid var(--surface);animation:recDot 1s ease-in-out infinite}
+.mmic.rec .mi{display:block}
+.typing-dot{display:inline-block;animation:recDot 1s ease-in-out infinite;font-size:1.2rem;line-height:1}
+/* ===== Modals ===== */
+.mo{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;animation:fadeIn .25s ease}
+.mo.show{display:flex}
+.mdl{background:var(--surface);border-radius:18px;padding:22px;width:100%;max-width:400px;max-height:82vh;overflow-y:auto;border:1px solid var(--border)}
+.mdl h2{font-size:1.05rem;font-weight:700;margin-bottom:3px;text-align:center;color:var(--text)}
+.mdl .ms{font-size:.76rem;color:var(--text2);text-align:center;margin-bottom:14px}
+.mdl .mb{font-size:.82rem;line-height:1.7;color:var(--text);white-space:pre-wrap;margin-bottom:12px}
+.mdl .mdc{display:grid;gap:5px;margin-bottom:12px}
+.mdl .mdd{display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:var(--surface2);border-radius:var(--radius-sm);font-size:.76rem}
+.mdl .mdd .ddn{font-weight:600;color:var(--accent)}
+.mdl .mdd .dds{color:var(--text2);font-size:.68rem}
+.mbr{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+.egi{background:var(--surface2);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:7px;border-left:3px solid var(--accent)}
+.egi .egih{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.egi .egih .egid{font-size:.65rem;font-weight:600;color:var(--accent);letter-spacing:.03em}
+.egi .egih .egir{background:none;border:none;color:var(--danger);font-size:.65rem;cursor:pointer;padding:2px 5px;border-radius:3px}
+.egi .egih .egir:hover{background:rgba(239,68,68,.1)}
+.egi input{width:100%;padding:6px 9px;border:1px solid var(--border);border-radius:5px;font-size:.78rem;color:var(--text);background:var(--surface);font-family:var(--font);margin-bottom:3px}
+.egi input:focus{outline:none;border-color:var(--accent)}
+.epr{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.epr label{font-size:.78rem;color:var(--text2)}
+.epr select{padding:5px 8px;border:1px solid var(--border);border-radius:5px;font-size:.78rem;color:var(--text);background:var(--surface);font-family:var(--font);cursor:pointer}
+.epr select:focus{outline:none;border-color:var(--accent)}
+.epr input{width:50px;padding:5px 8px;border:1px solid var(--border);border-radius:5px;font-size:.78rem;color:var(--text);background:var(--surface);font-family:var(--font)}
+.epr input:focus{outline:none;border-color:var(--accent)}
+/* ===== Settings ===== */
+.sg{background:var(--surface);border-radius:var(--radius);padding:5px 0;margin-bottom:10px;border:1px solid var(--border)}
+.si{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border)}
+.si:last-child{border-bottom:none}
+.si .sl{font-size:.82rem;font-weight:500}
+.si .sd{font-size:.65rem;color:var(--text3);margin-top:1px}
+.toggle{width:42px;height:22px;border-radius:11px;background:var(--text3);position:relative;cursor:pointer;transition:background .3s;flex-shrink:0}
+.toggle.on{background:var(--accent)}
+.toggle::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .3s cubic-bezier(.4,0,.2,1)}
+.toggle.on::after{transform:translateX(20px)}
+.ti{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:.78rem;color:var(--text);font-family:var(--font)}
+input[type=time].ti{appearance:auto}
+.ai-status{font-size:.68rem;padding:3px 10px;border-radius:10px;display:inline-flex;align-items:center;gap:4px}
+.ai-status.on{color:var(--success);background:rgba(16,185,129,.1)}
+.ai-status.off{color:var(--text3);background:var(--surface2)}
+.api-input{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:.78rem;color:var(--text);background:var(--surface);font-family:var(--font);margin-top:4px}
+.api-input:focus{outline:none;border-color:var(--accent)}
+select.ti{appearance:auto;cursor:pointer}
+.fi{text-align:center;padding:18px 0;color:var(--text3);font-size:.65rem;line-height:1.7}
+@media(max-width:400px){.ts{grid-template-columns:1fr 1fr}.capture-btn{width:76px;height:76px;font-size:2rem}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="app-header">
+    <h1>思迹</h1>
+    <div class="hdr-right">
+      <span class="date-badge" id="dateBadge"></span>
+      <button class="icon-btn" id="themeToggle">☀️</button>
+    </div>
+  </header>
+
+  <!-- TAB 1 -->
+  <section id="tab-capture" class="tab active">
+    <div class="capture-area">
+      <div class="capture-btn-wrapper">
+        <button class="capture-btn" id="captureBtn">🎤<span class="rec-badge">● REC</span></button>
+      </div>
+      <div class="capture-status" id="captureStatus"><span class="cd"></span>点按开始记录</div>
+      <div class="transcript-box" id="transcriptBox"></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-p" id="saveRecordBtn" disabled>保存录音</button>
+      </div>
+      <div class="capture-note-row">
+        <textarea id="quickNote" placeholder="打字记下念头……" rows="1"></textarea>
+        <button class="btn-s" id="saveNoteBtn" style="padding:9px 14px">记下</button>
+      </div>
+      <div class="capture-recent">
+        <div class="rl">最近记录</div>
+        <div id="recentMiniList"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TAB 2 -->
+  <section id="tab-today" class="tab">
+    <div class="ts">
+      <div class="sc"><div class="tn" id="statCount">0</div><div class="tl">记录</div></div>
+      <div class="sc"><div class="tn" id="statTopicsCount">0</div><div class="tl">话题</div></div>
+      <div class="sc"><div class="tn" id="statAlign">0</div><div class="tl">关联目标</div></div>
+    </div>
+    <div id="scatterAlert" style="display:none"></div>
+    <div class="section-title">⏳ 今日时间线</div>
+    <div class="timeline" id="timeline"></div>
+    <div class="section-title">📋 全部记录</div>
+    <div class="el" id="todayEntryList"></div>
+    <div class="empty-state" id="emptyToday" style="display:none;text-align:center;padding:36px 20px;color:var(--text3);font-size:.82rem">
+      <div style="font-size:2rem;margin-bottom:6px;opacity:.4">🌊</div>
+      <div>今天还没记录</div>
+    </div>
+  </section>
+
+  <!-- TAB 3 -->
+  <section id="tab-goals" class="tab">
+    <div class="gh">
+      <h2>🎯 目标计划 <span class="gb" id="periodBadge">5年</span></h2>
+      <button class="btn-s" id="editGoalsBtn" style="font-size:.68rem;padding:3px 10px">编辑</button>
+    </div>
+    <div id="goalCards"></div>
+    <button class="ga-btn" id="addGoalBtn">+ 添加目标</button>
+    <div class="empty-state" id="emptyGoals" style="display:none;text-align:center;padding:32px 20px;color:var(--text3);font-size:.82rem">
+      <div style="font-size:1.8rem;margin-bottom:6px;opacity:.4">🎯</div>
+      <div>还没有设定目标</div>
+    </div>
+  </section>
+
+  <!-- TAB 4 -->
+  <section id="tab-mentor" class="tab">
+    <div class="mentor-area">
+      <div class="mentor-hero">
+        <div class="mentor-av">🧘</div>
+        <div class="mn">思迹</div>
+        <div class="mt">你的成长向导 <span class="ai-badge" id="aiBadge">● 本地模式</span></div>
+      </div>
+      <div class="mchat" id="mentorChat">
+        <div class="mmsg mm">
+          你好，我是思迹。在这里我会帮你梳理每天的思绪，看清它们的流向。
+          <div class="mst">随时可以找我聊聊</div>
+        </div>
+      </div>
+      <div class="mqa">
+        <button onclick="triggerDaily()">📅 今日复盘</button>
+        <button onclick="triggerMonthly()">📊 月度分析</button>
+        <button onclick="triggerPattern()">🔍 模式分析</button>
+        <button onclick="triggerScatter()">🌊 思绪检查</button>
+      </div>
+      <div class="mib">
+        <textarea id="mentorInput" placeholder="跟思迹说点什么…" rows="1"></textarea>
+        <button class="mmic" id="mentorMicBtn">🎤<span class="mi"></span></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- TAB 5 -->
+  <section id="tab-settings" class="tab">
+    <div class="sg" style="border-color:var(--accent)">
+      <div class="si" style="border-bottom-color:var(--accent)">
+        <div><div class="sl" style="color:var(--accent)">🧠 AI 模型</div></div>
+      </div>
+      <div class="si">
+        <div><div class="sl">选择模型</div><div class="sd">Gemini / 豆包 / 本地模式</div></div>
+        <select class="ti" id="modelSelect" style="width:110px">
+          <option value="local">本地（离线）</option>
+          <option value="gemini">Gemini</option>
+          <option value="doubao">豆包</option>
+        </select>
+      </div>
+      <div class="si" id="apiKeyRow">
+        <div style="flex:1">
+          <div class="sl">API Key</div>
+          <input class="api-input" id="apiKeyInput" type="password" placeholder="输入你的 API Key…">
+        </div>
+      </div>
+      <div class="si">
+        <div><div class="sl">状态</div></div>
+        <span class="ai-status off" id="aiStatusDisplay">● 未连接</span>
+      </div>
+    </div>
+    <div class="sg">
+      <div class="si">
+        <div><div class="sl">晚间复盘提醒</div><div class="sd">到点弹窗复盘</div></div>
+        <div class="toggle on" id="reminderToggle"></div>
+      </div>
+      <div class="si">
+        <div><div class="sl">提醒时间</div></div>
+        <input type="time" class="ti" id="reminderTime" value="22:30">
+      </div>
+    </div>
+    <div class="sg">
+      <div class="si">
+        <div><div class="sl">深色模式</div></div>
+        <div class="toggle on" id="darkToggle"></div>
+      </div>
+    </div>
+    <div class="sg">
+      <div class="si">
+        <div><div class="sl">导出数据</div></div>
+        <button class="btn-s" id="exportBtn" style="font-size:.68rem;padding:3px 10px">导出</button>
+      </div>
+      <div class="si">
+        <div><div class="sl">清除全部数据</div></div>
+        <button class="btn-d" id="clearBtn" style="padding:4px 10px;font-size:.75rem">清除</button>
+      </div>
+    </div>
+    <div class="fi"><div>思迹 v3.5 · 数据纯本地</div></div>
+  </section>
+</div>
+
+<nav class="bottom-nav">
+  <button class="nav-btn active" data-tab="capture"><span class="nav-icon">🎙️</span><span class="nav-label">记录</span></button>
+  <button class="nav-btn" data-tab="today"><span class="nav-icon">📋</span><span class="nav-label">今天</span></button>
+  <button class="nav-btn" data-tab="goals"><span class="nav-icon">🎯</span><span class="nav-label">目标</span></button>
+  <button class="nav-btn" data-tab="mentor"><span class="nav-icon">🧘</span><span class="nav-label">导师</span></button>
+  <button class="nav-btn" data-tab="settings"><span class="nav-icon">⚙️</span><span class="nav-label">设置</span></button>
+</nav>
+
+<!-- Goals Modal -->
+<div class="mo" id="goalsModal">
+  <div class="mdl">
+    <h2>编辑目标计划</h2>
+    <div class="ms">设定周期和具体目标</div>
+    <div class="epr">
+      <label>周期：</label>
+      <select id="periodSelect">
+        <option value="1">1 年</option>
+        <option value="3">3 年</option><option value="5" selected>5 年</option>
+        <option value="10">10 年</option><option value="0">自定义</option>
+      </select>
+      <input class="ti" id="customPeriodInput" placeholder="年" style="width:44px;display:none">
+      <span style="font-size:.72rem;color:var(--text3)" id="periodPreview"></span>
+    </div>
+    <div id="goalsEditForm"></div>
+    <div class="mbr">
+      <button class="btn-s" id="goalsCancelBtn">取消</button>
+      <button class="btn-p" id="goalsSaveBtn">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Review Modal -->
+<div class="mo" id="reviewModal">
+  <div class="mdl">
+    <h2 id="reviewModalTitle">🌙 今日复盘</h2>
+    <div class="ms" id="reviewModalSub">思迹帮你梳理思绪</div>
+    <div class="mb" id="reviewModalBody"></div>
+    <div class="mdc" id="reviewModalDims"></div>
+    <div class="mbr">
+      <button class="btn-s" id="reviewCloseBtn">关闭</button>
+      <button class="btn-p" id="reviewTalkBtn">💬 找思迹聊聊</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════════════════
+const EK='sj4_entries',GK='sj4_goals',SK='sj4_settings';
+const NOW=new Date(),SY=NOW.getFullYear(),SM=NOW.getMonth()+1;
+
+let state={entries:[],goals:{period:5,startYear:SY,startMonth:SM,items:[
+  {dim:'事业',title:'',desc:''},{dim:'技能',title:'',desc:''},{dim:'财富',title:'',desc:''},{dim:'身心',title:'',desc:''}
+]},settings:{reminderTime:'22:30',reminderEnabled:true,darkMode:true,model:'local',apiKey:''},
+currentTab:'capture',isRecording:false,recognition:null,transcriptBuffer:'',mentorSpeaking:false,micForMentor:false};
+
+const DIM_ICONS={事业:'💼',技能:'📚',财富:'💰',身心:'🧘',创意:'🎨',关系:'💞',成长:'🌱',生活:'🏡',其他:'📌'};
+const DIM_KWS={事业:['工作','项目','升职','创业','老板','同事','客户','公司','职业','跳槽','收入','业绩','目标','管理','领导','团队','面试','辞职','业务','计划','会议','kpi','加班'],技能:['学习','读书','课程','考试','编程','英语','写作','设计','技能','培训','证书','知识','练习','掌握','提升','能力','技术','研究','方法','工具','学','阅读','看书'],财富:['钱','投资','理财','存钱','消费','买房','基金','股票','预算','省','财务','资产','负债','保险','支出','攒','赚钱','经济','工资','涨薪','省钱','花呗'],身心:['健康','运动','跑步','健身','睡眠','冥想','焦虑','压力','开心','累','休息','体检','饮食','减肥','情绪','心理','瑜伽','散步','放松','生病','心情','疲惫','难过'],创意:['灵感','创意','创作','写作','画画','音乐','设计','发明','点子','艺术','摄影'],关系:['朋友','家人','伴侣','父母','孩子','关系','沟通','社交','聚会','陪伴','爱人'],成长:['成长','改变','突破','挑战','勇气','习惯','坚持','自律','目标','进步','反省'],生活:['旅行','美食','做饭','买菜','打扫','装修','宠物','植物','电影','音乐','游戏','衣服']};
+const STOP=new Set(['的','了','是','在','我','有','和','就','不','人','都','一','上','也','很','到','说','要','去','你','会','着','没有','看','好','自己','这','那','他','她','它','们','什么','怎么','为什么','因为','所以','但是','可以','能','被','把','让','给','对','从','而','与','以','及','等','之','吗','啊','呢','吧','嗯','哦','呀','噢','哈','啦','个','些','做','想','觉得','感觉','可能','已经','还是','还','这个','那个','这些','那些','那种','这样','那样','时候','时间','地方','东西','事情','方面','一个','一种','一点','一下','起来','出来','就是','只是','可是','不过','但是','然而','虽然','如果','而且','并且','或者','其实','当然','确实','真的','非常','比较','有点','一些','一直','总是','每次','经常','有时','现在','今天','昨天','明天','晚上','早上','中午','下午','刚才','刚刚','已经','然后','后来','之后','以前','同时','还有','另外','此外','比如','例如','像','好像']);
+
+function loadData(){
+  try{const r=localStorage.getItem(EK);state.entries=r?JSON.parse(r):[]}catch{}
+  try{const r=localStorage.getItem(GK);if(r){const g=JSON.parse(r);if(g.items)state.goals=g}}catch{}
+  try{const r=localStorage.getItem(SK);if(r)Object.assign(state.settings,JSON.parse(r))}catch{}
+}
+function saveData(){localStorage.setItem(EK,JSON.stringify(state.entries));localStorage.setItem(GK,JSON.stringify(state.goals));localStorage.setItem(SK,JSON.stringify(state.settings))}
+function gd(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function gt(){const d=new Date();return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
+function getToday(){return state.entries.filter(e=>e.date===gd())}
+function rd(){renderToday();renderGoals();renderCaptureRecent();ce()}
+function addEntry(t,s){if(!t||!t.trim())return;const e={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),text:t.trim(),date:gd(),time:gt(),ts:Date.now(),source:s||'voice'};state.entries.unshift(e);saveData();rd();return e}
+function delEntry(id){state.entries=state.entries.filter(e=>e.id!==id);saveData();rd()}
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+function showToast(m){const el=document.getElementById('toast');el.textContent=m;el.classList.add('show');clearTimeout(el._tt);el._tt=setTimeout(()=>el.classList.remove('show'),2200)}
+
+function getPeriodRange(){
+  const p=state.goals.period||5, sy=state.goals.startYear||SY;
+  return p===0?sy+'年至今':sy+' → '+(sy+p)+'（'+p+'年）';
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  AI SERVICE — Gemini + 豆包 + 本地回退
+// ═══════════════════════════════════════════════════════════════════
+const AI={
+  _model:'local',_apiKey:'',
+  _geminiEP:'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+  _doubaoEP:'https://ark.cn-beijing.volces.com/api/v3/chat/completions',
+
+  init(){this._model=state.settings.model||'local';this._apiKey=state.settings.apiKey||'';this._updateBadge()},
+
+  _updateBadge(){
+    const b=document.getElementById('aiBadge');
+    const st=document.getElementById('aiStatusDisplay');
+    if(this._model==='local'||!this._apiKey){
+      b.innerHTML='● 本地模式';st.innerHTML='● 未连接';st.className='ai-status off';
+    }else{
+      const n={gemini:'Gemini',doubao:'豆包'}[this._model]||this._model;
+      b.innerHTML='● '+n;st.innerHTML='● 已连接 '+n;st.className='ai-status on';
+    }
+  },
+
+  async _callGemini(system,user){
+    const r=await fetch(this._geminiEP+'?key='+this._apiKey,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({contents:[{parts:[{text:system+'\n\n'+user}]}]})
+    });
+    if(!r.ok){const e=await r.text();throw new Error('Gemini '+r.status+': '+e)}
+    const d=await r.json();
+    return d.candidates?.[0]?.content?.parts?.[0]?.text||null;
+  },
+
+  async _callDoubao(system,user){
+    const r=await fetch(this._doubaoEP,{
+      method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+this._apiKey},
+      body:JSON.stringify({model:'doubao-pro-32k',messages:[
+        {role:'system',content:system},{role:'user',content:user}
+      ]})
+    });
+    if(!r.ok){const e=await r.text();throw new Error('豆包 '+r.status+': '+e)}
+    const d=await r.json();
+    return d.choices?.[0]?.message?.content||null;
+  },
+
+  async ask(system,user,timeout=15000){
+    if(this._model==='local'||!this._apiKey)return null;
+    try{
+      const ctrl=new AbortController();const tid=setTimeout(()=>ctrl.abort(),timeout);
+      let result;
+      if(this._model==='gemini')result=await this._callGemini(system,user);
+      else if(this._model==='doubao')result=await this._callDoubao(system,user);
+      clearTimeout(tid);
+      return result;
+    }catch(e){console.warn('AI call failed:',e);return null}
+  },
+
+  // ── 纠错 ──
+  async correct(text){
+    if(!text||this._model==='local'||!this._apiKey)return autoCorrectLocal(text);
+    const r=await this.ask(
+      '你是中文文本编辑助手。将语音识别文本修正为自然通顺的中文，改正错别字，添加标点符号。保持原意，不要添加额外内容。只输出修正后的文本。',
+      text,10000
+    );
+    return r||autoCorrectLocal(text);
+  },
+
+  // ── 导师对话 ──
+  async mentor(texts,goals,period){
+    const t=texts.join('\n');
+    if(this._model==='local'||!this._apiKey)return null;
+    const goalStr=goals&&goals.items?goals.items.filter(g=>g.title).map(g=>`${g.dim}：${g.title}`).join('\n'):'未设定';
+    const system=period==='daily'
+      ?'你是思迹，一位温柔而锐利的个人成长导师。语气温暖有深度，给出简短有力的每日复盘。用中文，200字以内。'
+      :'你是思迹，一位温柔而锐利的个人成长导师。对用户过去一段时间的记录做深度分析，指出行为模式与长期目标之间的偏差。用中文，400字以内。分三点：整体评估、偏差分析、下步建议。';
+    const user=period==='daily'
+      ?`今天的记录：\n${t||'（无记录）'}\n\n目标计划：\n${goalStr}\n\n请生成今日复盘。`
+      :`近期的记录：\n${t||'（无记录）'}\n\n目标计划：\n${goalStr}\n\n请生成月度深度分析。`;
+    const r=await this.ask(system,user,20000);
+    return r;
+  },
+
+  // ── 自由对话 ──
+  async chat(userMsg,recentEntries,goals){
+    if(this._model==='local'||!this._apiKey)return null;
+    const recent=recentEntries.slice(0,5).map(e=>e.text).join('\n');
+    const goalStr=goals&&goals.items?goals.items.filter(g=>g.title).map(g=>`${g.dim}：${g.title}`).join('\n'):'未设定';
+    const r=await this.ask(
+      '你是思迹，一位温柔但锐利的个人成长导师。根据用户最近的记录和目标，给出温暖而有洞察力的回应。用中文，100字以内。',
+      `用户最近的记录：\n${recent||'（暂无）'}\n\n目标计划：\n${goalStr}\n\n用户说：${userMsg}`,
+      15000
+    );
+    return r;
+  },
+
+  // ── 模式分析 ──
+  async pattern(texts,goals){
+    if(this._model==='local'||!this._apiKey)return null;
+    const t=texts.join('\n');const g=goals&&goals.items?goals.items.filter(x=>x.title).map(x=>x.dim+'：'+x.title).join('\n'):'未设定';
+    return await this.ask(
+      '你是思迹，一位思维分析师。分析用户的记录，找出思维模式、反复出现的主题、与目标的偏差。用中文，200字以内，直接说重点。',
+      `记录：\n${t||'（无）'}\n\n目标：\n${g}`,
+      20000
+    );
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════════
+//  LOCAL TEXT CORRECTOR (fallback when no AI)
+// ═══════════════════════════════════════════════════════════════════
+function autoCorrectLocal(text){
+  text=text.replace(/(.)\1{3,}/g,'$1');
+  text=text.replace(/(嗯|呃|啊|那个|这个|就是说|然后呢|对吧|就是)\s*/g,'');
+  text=text.replace(/\s+/g,'');
+  if(text&&!'。！？，；：'.includes(text.slice(-1)))text+='。';
+  text=text.replace(/(吗|吧|呢|啊|呀|嘛|么)([^\s。！？])/g,'$1，$2');
+  text=text.replace(/[，,]{2,}/g,'，');text=text.replace(/[。.]{2,}/g,'。');
+  text=text.replace(/([\u4e00-\u9fff])([。！？])([\u4e00-\u9fff])/g,'$1$2\n$3');
+  text=text.replace(/(?<![\u3000-\u9fff])(然后|但是|而且|不过|所以|因为)(?=[\u4e00-\u9fff])/g,'。$1');
+  return text;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  KEYWORD EXTRACTION & GOAL ALIGNMENT
+// ═══════════════════════════════════════════════════════════════════
+function extractKeywords(texts){
+  if(!texts||!texts.length)return[];
+  const t=texts.join(' ').replace(/[，。！？、；：""''（）【】《》——……·\d\s.,!?;:'"()\[\]{}<>]/g,' ');
+  const f={},ch=[...t].filter(c=>c!==' '&&c!=='\n');
+  for(const c of ch){if(!STOP.has(c))f[c]=(f[c]||0)+1}
+  for(let i=0;i<ch.length-1;i++){const b=ch[i]+ch[i+1];if(!STOP.has(b)&&!STOP.has(ch[i])&&!STOP.has(ch[i+1])&&b.trim().length>1)f[b]=(f[b]||0)+1}
+  for(let i=0;i<ch.length-2;i++){const tr=ch[i]+ch[i+1]+ch[i+2];if(!STOP.has(tr)&&!STOP.has(ch[i])&&!STOP.has(ch[i+1])&&!STOP.has(ch[i+2])&&tr.trim().length>2)f[tr]=(f[tr]||0)+1}
+  return Object.entries(f).map(([w,c])=>({word:w,count:c})).filter(i=>i.word.length).sort((a,b)=>b.count-a.count).slice(0,30);
+}
+function alignEntry(text){if(!state.goals||!state.goals.items)return[];const m=[];text=text.toLowerCase();for(const g of state.goals.items){const k=DIM_KWS[g.dim]||[];for(const kw of k){if(text.includes(kw)){m.push(g.dim);break}}}return m}
+function calcProg(){const today=getToday(),c={},t=Math.max(today.length,1);if(state.goals&&state.goals.items)for(const g of state.goals.items){let cnt=0;for(const e of today){if(alignEntry(e.text).includes(g.dim))cnt++}c[g.dim]={count:cnt,ratio:cnt/t}}return c}
+function detectScatter(texts){if(!texts||texts.length<3)return null;const tp=extractKeywords(texts);if(tp.length<5)return null;const total=tp.reduce((s,t)=>s+t.count,0);const tr=tp[0].count/total;if(tr<0.3&&tp.length>=5){const e=-tp.slice(0,10).reduce((s,t)=>{const p=t.count/total;return s+p*Math.log2(p)},0);return{score:e,topics:tp.slice(0,8),scattered:e>2.5}}return null}
+
+// ═══════════════════════════════════════════════════════════════════
+//  SPEECH
+// ═══════════════════════════════════════════════════════════════════
+let recInProgress=false;
+function initSR(){
+  if(state.recognition)return true;
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){document.getElementById('captureStatus').textContent='⚠️ 请用 Chrome';return false}
+  state.recognition=new SR;state.recognition.lang='zh-CN';state.recognition.continuous=true;state.recognition.interimResults=true;
+  state.recognition.onresult=ev=>{
+    let interim='',final='';
+    for(let i=ev.resultIndex;i<ev.results.length;i++){
+      const r=ev.results[i];
+      if(r.isFinal)final+=r[0].transcript;
+      else interim+=r[0].transcript;
+    }
+    if(final&&recInProgress){
+      // Auto-correct using AI if available, otherwise local
+      const corrected=AI._model!=='local'&&AI._apiKey?autoCorrectLocal(final):autoCorrectLocal(final);
+      state.transcriptBuffer+=corrected;
+    }
+    const display=state.transcriptBuffer+(interim?' '+interim:'');
+    document.getElementById('transcriptBox').textContent=display;
+  };
+  state.recognition.onerror=ev=>{console.warn('SR error:',ev.error);if(ev.error!=='no-speech'&&ev.error!=='aborted'&&state.isRecording){forceStopRec();showToast('识别出错')}};
+  state.recognition.onend=()=>{if(state.isRecording&&recInProgress){try{state.recognition.start()}catch(e){}}};
+  return true;
+}
+function startRec(){
+  if(recInProgress)return;if(!initSR())return;
+  state.transcriptBuffer='';recInProgress=true;state.isRecording=true;
+  const tb=document.getElementById('transcriptBox');tb.textContent='';tb.classList.add('rec-active');
+  const btn=document.getElementById('captureBtn');btn.classList.add('rec');btn.innerHTML='⏹️<span class="rec-badge">● REC</span>';
+  const st=document.getElementById('captureStatus');st.innerHTML='<span class="cd"></span>🎙️ 录音中…';st.classList.add('act');
+  document.getElementById('saveRecordBtn').disabled=true;
+  try{state.recognition.start()}catch(e){console.error(e);forceStopRec()}
+}
+function stopRec(){if(!recInProgress)return;recInProgress=false;state.isRecording=false;
+  const btn=document.getElementById('captureBtn');btn.classList.remove('rec');btn.innerHTML='🎤<span class="rec-badge">● REC</span>';
+  const st=document.getElementById('captureStatus');st.classList.remove('act');
+  const tb=document.getElementById('transcriptBox');tb.classList.remove('rec-active');
+  if(state.recognition)try{state.recognition.stop()}catch(e){}
+  const text=state.transcriptBuffer.trim();
+  if(text){document.getElementById('saveRecordBtn').disabled=false;st.innerHTML='<span class="cd"></span>✅ 录好了';}
+  else st.innerHTML='<span class="cd"></span>点按开始记录';
+}
+function forceStopRec(){recInProgress=false;state.isRecording=false;
+  const btn=document.getElementById('captureBtn');btn.classList.remove('rec');btn.innerHTML='🎤<span class="rec-badge">● REC</span>';
+  const st=document.getElementById('captureStatus');st.classList.remove('act');document.getElementById('transcriptBox').classList.remove('rec-active');
+  if(state.recognition)try{state.recognition.stop()}catch(e){}
+  st.innerHTML='<span class="cd"></span>点按开始记录';
+}
+function toggleRec(){recInProgress?stopRec():startRec()}
+function speak(text,cb){if(!window.speechSynthesis){if(cb)cb();return}window.speechSynthesis.cancel();const ut=new SpeechSynthesisUtterance(text);ut.lang='zh-CN';ut.rate=.92;ut.pitch=1.0;const v=window.speechSynthesis.getVoices().find(v=>v.lang.startsWith('zh'));if(v)ut.voice=v;if(cb){ut.onend=cb;ut.onerror=cb}window.speechSynthesis.speak(ut)}
+
+// ═══════════════════════════════════════════════════════════════════
+//  MENTOR — AI-powered with local fallback
+// ═══════════════════════════════════════════════════════════════════
+function aChat(usr,text,isTyping){
+  const c=document.getElementById('mentorChat');
+  if(isTyping){const d=document.createElement('div');d.className='mmsg mm';d.id='typingMsg';d.innerHTML='<span class="typing-dot">●</span><span class="typing-dot" style="animation-delay:.3s">●</span><span class="typing-dot" style="animation-delay:.6s">●</span>';c.appendChild(d);c.scrollTop=c.scrollHeight;return}
+  if(usr){const d=document.createElement('div');d.className='mmsg mu';d.innerHTML=esc(text)+'<div class="mst">你 · '+gt()+'</div>';c.appendChild(d);c.scrollTop=c.scrollHeight;return}
+  const d=document.createElement('div');d.className='mmsg mm';
+  d.innerHTML=text+'<div class="mst">思迹 · '+gt()+'</div>';c.appendChild(d);c.scrollTop=c.scrollHeight;
+}
+function removeTyping(){const el=document.getElementById('typingMsg');if(el)el.remove()}
+
+async function triggerDaily(){
+  const entries=getToday();const texts=entries.map(e=>e.text);
+  aChat(false,'',true);//typing
+  let r=await AI.mentor(texts,state.goals,'daily');
+  if(!r)r=mentLocalDaily(entries,state.goals);
+  removeTyping();aChat(false,r);speak(r);
+  document.getElementById('reviewModalTitle').textContent='🌙 今日复盘';
+  document.getElementById('reviewModalSub').textContent='思迹帮你梳理了今天';
+  document.getElementById('reviewModalBody').textContent=r;
+  const p=calcProg();const dim=document.getElementById('reviewModalDims');
+  dim.innerHTML=Object.entries(p).map(([d,v])=>'<div class="mdd"><span class="ddn">'+d+'</span><span class="dds">提及 '+v.count+' 次 ('+Math.round(v.ratio*100)+'%)</span></div>').join('');
+  document.getElementById('reviewModal').classList.add('show');
+}
+
+async function triggerMonthly(){
+  const texts=state.entries.map(e=>e.text);
+  aChat(false,'',true);
+  let r=await AI.mentor(texts,state.goals,'monthly');
+  if(!r)r=mentLocalMonthly(state.entries,state.goals);
+  removeTyping();aChat(false,r);speak(r);
+  document.getElementById('reviewModalTitle').textContent='📊 月度分析';
+  document.getElementById('reviewModalSub').textContent='你的成长报告';
+  document.getElementById('reviewModalBody').textContent=r;document.getElementById('reviewModalDims').innerHTML='';
+  document.getElementById('reviewModal').classList.add('show');
+}
+
+async function triggerPattern(){
+  const texts=state.entries.map(e=>e.text);
+  aChat(false,'',true);
+  let r=await AI.pattern(texts,state.goals);
+  if(!r)r=mentLocalPattern(state.entries,state.goals);
+  removeTyping();aChat(false,r);speak(r);
+}
+
+async function triggerScatter(){
+  const today=getToday();const texts=today.map(e=>e.text);
+  const a=detectScatter(texts);
+  if(!a||!a.scattered){aChat(false,'今天思绪还算集中，没有明显分散。');return}
+  aChat(false,'🌊 **思绪分散**\n\n今天涉及 '+a.topics.length+' 个话题：'+a.topics.map(t=>t.word).join('、')+'。\n\n话题多了注意力就散了。要不要用 AI 深度分析一下你的模式？');
+  speak('你今天的想法比较分散。');
+}
+
+async function sendMentor(t){
+  if(!t||!t.trim())return;
+  aChat(true,t);document.getElementById('mentorInput').value='';
+  aChat(false,'',true);
+  const r=await AI.chat(t,state.entries,state.goals);
+  removeTyping();
+  if(r){aChat(false,r);return}
+  // Local fallback
+  const l=t.toLowerCase();
+  let resp='';
+  if(l.includes('复盘')||l.includes('今天')||l.includes('日'))resp=mentLocalDaily(getToday(),state.goals);
+  else if(l.includes('月')||l.includes('总结')||l.includes('整体'))resp=mentLocalMonthly(state.entries,state.goals);
+  else if(l.includes('模式')||l.includes('分析')||l.includes('看看'))resp=mentLocalPattern(state.entries,state.goals);
+  else if(l.includes('目标')||l.includes('计划'))resp='你的目标：'+state.goals.items.filter(g=>g.title).map(g=>'「'+g.dim+'」：'+g.title).join('；');
+  else if(l.includes('谢谢')||l.includes('好的'))resp='不客气。我一直在。';
+  else if(l.includes('睡')||l.includes('晚安'))resp='晚安，好好休息。';
+  else resp=['嗯，我在听。继续说。','这个很有趣，能再多说点吗？','我明白你的意思。然后呢？','还有吗？'][Math.floor(Math.random()*4)];
+  aChat(false,resp);
+}
+
+// ── Local fallback mentor ──
+const OD=['今天的记录我看了——','帮你梳理了一下今天——','来看看今天你都在想什么——'];
+function mentLocalDaily(entries,goals){
+  if(!entries.length)return '今天还没有记录。等你想说了我都在。';
+  const texts=entries.map(e=>e.text);const topics=extractKeywords(texts);const p=calcProg();
+  const ad=Object.entries(p).filter(([_,v])=>v.count>0).map(([d])=>d);
+  let msg=OD[Math.floor(Math.random()*OD.length)]+'\n\n';
+  const s=[...entries].reverse();
+  msg+='⏳ 今天 '+entries.length+' 条想法';
+  if(s.length)msg+='，从 '+s[0].time+' 到 '+s[s.length-1].time;
+  msg+='。\n\n';
+  if(topics.length)msg+='💭 反复想到：'+topics.slice(0,5).map(t=>t.word).join('、')+'。\n\n';
+  if(ad.length)msg+='🎯 与目标「'+ad.join('、')+'」相关。';
+  else msg+='🎯 今天的想法还没明显关联到你的目标。';
+  if(goals&&goals.items){const ia=goals.items.filter(g=>!ad.includes(g.dim)&&g.title);if(ia.length)msg+='\n\n⚠️ 「'+ia.map(g=>g.dim).join('、')+'」今天没被提到。';}
+  msg+='\n\n'+['明天试着在反复想的事情上走一小步。','挑一个最在意的念头，为它做一件小事。','思绪在某个方向上反复，那里有你真正在意的东西。'][Math.floor(Math.random()*3)];
+  return msg;
+}
+function mentLocalMonthly(entries,goals){
+  if(!entries.length)return '这个月还没有记录。下个月开始每天留一条想法吧。';
+  const texts=entries.map(e=>e.text);const topics=extractKeywords(texts);const dates=new Set(entries.map(e=>e.date));
+  const cnt={};for(const e of entries){for(const d of alignEntry(e.text))cnt[d]=(cnt[d]||0)+1}
+  const total=Math.max(entries.length,1);
+  let msg='📊 本月 '+entries.length+' 条想法，活跃 '+dates.size+' 天。\n\n';
+  msg+='💭 高频：';if(topics.length)msg+=topics.slice(0,8).map(t=>t.word+'('+t.count+')').join('、');
+  msg+='\n\n📐 目标分布：\n';
+  if(goals&&goals.items)for(const g of goals.items){const c=cnt[g.dim]||0;const p=Math.round(c/total*10);msg+='  '+g.dim+' '+'█'.repeat(p)+'░'.repeat(10-p)+' '+Math.round(c/total*100)+'%\n';if(p===0&&g.title)msg+='  ⚠️ 本月未涉及\n';}
+  msg+='\n'+['下个月选一个方向多给些时间。','少即是多，聚焦一个目标。'][Math.floor(Math.random()*2)];
+  return msg;
+}
+function mentLocalPattern(entries,goals){
+  if(!entries.length)return '数据还不够分析模式。先记录几天看看。';
+  const recent=entries.slice(0,20);const texts=recent.map(e=>e.text);const topics=extractKeywords(texts);
+  const cnt={};for(const e of recent){for(const d of alignEntry(e.text))cnt[d]=(cnt[d]||0)+1}
+  const sd=Object.entries(cnt).sort((a,b)=>b[1]-a[1]);
+  let msg='🔍 最近模式分析：\n\n';
+  if(sd.length){msg+='最常关注「'+sd[0][0]+'」（'+sd[0][1]+'次）。';if(sd[sd.length-1][1]===0)msg+='「'+sd[sd.length-1][0]+'」未出现。'}
+  msg+='\n\n';if(topics.length)msg+='反复提到：'+topics.slice(0,6).map(t=>t.word).join('、')+'。\n\n';
+  msg+=['注意力有偏好是正常的，但需要问：现在的投入和目标一致吗？','模式形成后会自我强化。试着给「想成为」的方向更多注意力。','反复出现的想法是最重要的信号。'][Math.floor(Math.random()*3)];
+  return msg;
+}
+function getScatterMsg(a){return '🌊 思绪分散\n\n今天涉及 '+a.topics.length+' 个话题：'+a.topics.map(t=>t.word).join('、')+'。\n\n话题多了注意力就散了。'}
+
+// ═══════════════════════════════════════════════════════════════════
+//  RENDER
+// ═══════════════════════════════════════════════════════════════════
+function renderCaptureRecent(){
+  const el=document.getElementById('recentMiniList');const r=state.entries.slice(0,5);
+  if(!r.length){el.innerHTML='<div style="color:var(--text3);font-size:.75rem;padding:5px 0">暂无</div>';return}
+  el.innerHTML=r.map(e=>'<div class="me"><span class="met">'+e.time+'</span><span class="mex">'+esc(e.text)+'</span><span class="meb">'+(e.source==='voice'?'🎙️':'✍️')+'</span></div>').join('');
+}
+function renderToday(){
+  const entries=getToday();
+  document.getElementById('statCount').textContent=entries.length;
+  const topics=extractKeywords(entries.map(e=>e.text));document.getElementById('statTopicsCount').textContent=topics.length;
+  const p=calcProg();document.getElementById('statAlign').textContent=Object.values(p).filter(v=>v.count>0).length;
+  const sa=document.getElementById('scatterAlert');const sc=detectScatter(entries.map(e=>e.text));
+  if(sc&&sc.scattered)sa.innerHTML='<div class="scatter-alert">🌊 思绪比较分散，涉及 '+sc.topics.length+' 个话题。</div>',sa.style.display='block';else sa.style.display='none';
+  const tl=document.getElementById('timeline');tl.innerHTML='';
+  for(let h=6;h<23;h++){const t=String(h).padStart(2,'0')+':00';const m=entries.filter(e=>e.time.startsWith(String(h).padStart(2,'0')));const d=document.createElement('div');d.className='tlh'+(m.length?' he':'');d.innerHTML='<span class="tlt">'+t+'</span><span class="tld"></span><span class="tlc'+(m.length?' ht':'')+'">'+(m.length?m.map(e=>esc(e.text.slice(0,22))+(e.text.length>22?'…':'')).join('<br>'):'—')+'</span>';tl.appendChild(d)}
+  const list=document.getElementById('todayEntryList');const empty=document.getElementById('emptyToday');
+  if(!entries.length){list.innerHTML='';empty.style.display='block';return}
+  empty.style.display='none';list.innerHTML=entries.map(e=>'<div class="ec"><div class="ect">'+e.time+' · '+(e.source==='voice'?'🎙️':e.source==='text'?'✍️':'💭')+'</div><div class="ecx">'+esc(e.text)+'</div><div class="eca"><button onclick="speak(\''+esc(e.text).replace(/'/g,"\\'")+'\')">🔊 听</button><button class="ecd" onclick="if(confirm(\'删除？\'))delEntry(\''+e.id+'\')">🗑️</button></div></div>').join('');
+}
+function renderGoals(){
+  const c=document.getElementById('goalCards');const e=document.getElementById('emptyGoals');
+  document.getElementById('periodBadge').textContent=getPeriodRange();
+  const p=calcProg();const cols=['','c1','c2','c3','c4'];
+  const has=state.goals.items.filter(g=>g.title);
+  if(!has.length){c.innerHTML='';e.style.display='block';return}
+  e.style.display='none';
+  c.innerHTML=state.goals.items.filter(g=>g.title).map((g,i)=>{
+    const pp=p[g.dim]||{count:0,ratio:0};const bp=Math.min(pp.ratio*100,100);
+    return '<div class="gc"><div class="gdim">'+(DIM_ICONS[g.dim]||'📌')+' '+g.dim+'</div><div class="gct">'+esc(g.title)+'</div>'+(g.desc?'<div class="gcd">'+esc(g.desc)+'</div>':'')+'<div class="gbar"><div class="gf '+(cols[i%5]||'')+'" style="width:'+bp+'%"></div></div><div class="gstat"><span>今日 '+pp.count+' 次</span><span>'+Math.round(bp)+'%</span></div></div>';
+  }).join('');
+}
+function renderGoalsEdit(){
+  const form=document.getElementById('goalsEditForm');
+  const sel=document.getElementById('periodSelect');sel.value=String(state.goals.period||5);
+  const cust=document.getElementById('customPeriodInput');cust.style.display=state.goals.period===0?'inline-block':'none';if(state.goals.period===0)cust.value='';
+  document.getElementById('periodPreview').textContent='→ '+getPeriodRange();
+  form.innerHTML='';
+  state.goals.items.forEach((g,i)=>{
+    form.innerHTML+='<div class="egi"><div class="egih"><span class="egid">'+(DIM_ICONS[g.dim]||'📌')+' '+g.dim+'</span><button class="egir" onclick="removeGoal('+i+')">✕</button></div><input id="ge_'+i+'_title" placeholder="目标标题（留空则不显示）" value="'+esc(g.title||'')+'"><input id="ge_'+i+'_desc" placeholder="描述（可选）" value="'+esc(g.desc||'')+'"></div>';
+  });
+}
+function removeGoal(idx){if(state.goals.items.length<=1){showToast('至少保留一个');return}state.goals.items.splice(idx,1);renderGoalsEdit()}
+function addNewGoal(){const used=state.goals.items.map(g=>g.dim);const all=Object.keys(DIM_KWS);const avail=all.filter(d=>!used.includes(d));const nd=avail.length?avail[0]:'其他';state.goals.items.push({dim:nd,title:'',desc:''});renderGoalsEdit()}
+function ce(){const has=state.goals.items.some(g=>g.title);document.getElementById('emptyGoals').style.display=has?'none':'block'}
+
+// ═══════════════════════════════════════════════════════════════════
+//  REMINDER
+// ═══════════════════════════════════════════════════════════════════
+let ri=null;
+function startRem(){if(ri)clearInterval(ri);if(!state.settings.reminderEnabled)return;ri=setInterval(()=>{const n=new Date();const cur=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');if(cur===state.settings.reminderTime){const e=getToday();if(e.length)autoRev()}},30000)}
+function autoRev(){if('Notification'in window&&Notification.permission==='granted')new Notification('思迹 · 晚间复盘',{body:'今天有 '+getToday().length+' 条想法',tag:'sj4-review'});triggerDaily()}
+async function reqN(){if(!('Notification'in window))return;if(Notification.permission==='granted')return;if(Notification.permission!=='denied')await Notification.requestPermission()}
+
+// ═══════════════════════════════════════════════════════════════════
+//  NAV & SETTINGS
+// ═══════════════════════════════════════════════════════════════════
+function switchTab(tab){
+  state.currentTab=tab;
+  document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(el=>el.classList.remove('active'));
+  document.querySelector('.nav-btn[data-tab="'+tab+'"]').classList.add('active');
+  if(tab==='today')renderToday();if(tab==='goals')renderGoals();
+}
+function applyTheme(dark){
+  if(!dark){document.documentElement.setAttribute('data-theme','light');document.getElementById('themeToggle').textContent='🌙'}
+  else{document.documentElement.removeAttribute('data-theme');document.getElementById('themeToggle').textContent='☀️'}
+  state.settings.darkMode=dark;saveData();renderSett();
+}
+function renderSett(){
+  const s=state.settings;
+  document.getElementById('reminderToggle').className='toggle'+(s.reminderEnabled?' on':'');
+  document.getElementById('reminderTime').value=s.reminderTime;
+  document.getElementById('darkToggle').className='toggle'+(s.darkMode?' on':'');
+  document.getElementById('modelSelect').value=s.model||'local';
+  document.getElementById('apiKeyInput').value=s.apiKey||'';
+  AI.init();
+}
+function updateBadge(){const n=new Date(),w=['日','一','二','三','四','五','六'];document.getElementById('dateBadge').textContent=(n.getMonth()+1)+'月'+n.getDate()+'日 周'+w[n.getDay()]}
+
+// ═══════════════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════════════
+loadData();AI.init();
+if(!state.settings.darkMode)applyTheme(false);else applyTheme(true);
+updateBadge();renderToday();renderGoals();renderCaptureRecent();renderSett();ce();
+if(window.speechSynthesis){window.speechSynthesis.getVoices();window.speechSynthesis.onvoiceschanged=()=>window.speechSynthesis.getVoices()}
+
+document.getElementById('captureBtn').addEventListener('click',toggleRec);
+document.getElementById('saveRecordBtn').addEventListener('click',()=>{
+  const t=state.transcriptBuffer.trim();if(!t)return;
+  addEntry(t,'voice');state.transcriptBuffer='';document.getElementById('transcriptBox').textContent='';document.getElementById('saveRecordBtn').disabled=true;
+  const st=document.getElementById('captureStatus');st.innerHTML='<span class="cd"></span>✅ 已保存';setTimeout(()=>{st.innerHTML='<span class="cd"></span>点按开始记录'},1200);showToast('✅ 已保存');
+});
+document.getElementById('saveNoteBtn').addEventListener('click',()=>{const ta=document.getElementById('quickNote');const t=ta.value.trim();if(!t){showToast('写点什么');return}addEntry(t,'text');ta.value='';showToast('✅ 已保存')});
+document.getElementById('quickNote').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();document.getElementById('saveNoteBtn').click()}});
+document.getElementById('themeToggle').addEventListener('click',()=>applyTheme(!state.settings.darkMode));
+document.querySelectorAll('.nav-btn').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
+
+// Goals
+document.getElementById('editGoalsBtn').addEventListener('click',()=>{renderGoalsEdit();document.getElementById('goalsModal').classList.add('show')});
+document.getElementById('goalsCancelBtn').addEventListener('click',()=>document.getElementById('goalsModal').classList.remove('show'));
+document.getElementById('addGoalBtn').addEventListener('click',addNewGoal);
+document.getElementById('periodSelect').addEventListener('change',e=>{const c=document.getElementById('customPeriodInput');c.style.display=e.value==='0'?'inline-block':'none';const p=parseInt(e.value)||5;const sy=state.goals.startYear||SY;document.getElementById('periodPreview').textContent='→ '+sy+' → '+(sy+p)+'（'+p+'年）'});
+document.getElementById('customPeriodInput').addEventListener('input',()=>{const p=parseInt(document.getElementById('customPeriodInput').value)||5;const sy=state.goals.startYear||SY;document.getElementById('periodPreview').textContent='→ '+sy+' → '+(sy+p)+'（'+p+'年）'});
+document.getElementById('goalsSaveBtn').addEventListener('click',()=>{const psel=document.getElementById('periodSelect'),cust=document.getElementById('customPeriodInput');state.goals.period=psel.value==='0'?parseInt(cust.value)||5:parseInt(psel.value);state.goals.startYear=SY;state.goals.startMonth=SM;state.goals.items.forEach((g,i)=>{g.title=document.getElementById('ge_'+i+'_title').value;g.desc=document.getElementById('ge_'+i+'_desc').value});saveData();renderGoals();ce();document.getElementById('goalsModal').classList.remove('show');showToast('✅ 已保存')});
+
+// Mentor
+document.getElementById('mentorInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMentor(document.getElementById('mentorInput').value)}});
+document.getElementById('mentorMicBtn').addEventListener('click',()=>{
+  if(!state.recognition&&!initSR())return;
+  if(recInProgress){stopRec();if(state.transcriptBuffer.trim()){sendMentor(state.transcriptBuffer);state.transcriptBuffer='';document.getElementById('transcriptBox').textContent=''}document.getElementById('mentorMicBtn').classList.remove('rec');return}
+  state.transcriptBuffer='';recInProgress=true;state.isRecording=true;
+  document.getElementById('mentorMicBtn').classList.add('rec');
+  if(!state.recognition)initSR();
+  const st=document.getElementById('captureStatus');st.innerHTML='<span class="cd"></span>🎙️ 说给思迹听…';st.classList.add('act');
+  try{state.recognition.start()}catch(e){recInProgress=false;state.isRecording=false;document.getElementById('mentorMicBtn').classList.remove('rec');st.classList.remove('act');st.innerHTML='<span class="cd"></span>点按开始记录';return}
+  const ci=setInterval(()=>{if(!recInProgress){clearInterval(ci);document.getElementById('mentorMicBtn').classList.remove('rec');document.getElementById('captureStatus').classList.remove('act');document.getElementById('captureStatus').innerHTML='<span class="cd"></span>点按开始记录';if(state.transcriptBuffer.trim()){sendMentor(state.transcriptBuffer);state.transcriptBuffer='';document.getElementById('transcriptBox').textContent=''}}},500);
+});
+
+// Review modal
+document.getElementById('reviewCloseBtn').addEventListener('click',()=>document.getElementById('reviewModal').classList.remove('show'));
+document.getElementById('reviewTalkBtn').addEventListener('click',()=>{document.getElementById('reviewModal').classList.remove('show');switchTab('mentor')});
+
+// Settings - AI config
+document.getElementById('modelSelect').addEventListener('change',e=>{state.settings.model=e.target.value;saveData();AI.init();showToast('模型已切换')});
+document.getElementById('apiKeyInput').addEventListener('change',e=>{state.settings.apiKey=e.target.value;saveData();AI.init();showToast('API Key 已保存')});
+
+document.getElementById('reminderToggle').addEventListener('click',()=>{state.settings.reminderEnabled=!state.settings.reminderEnabled;saveData();renderSett();if(state.settings.reminderEnabled){startRem();reqN();showToast('提醒已开')}else{if(ri)clearInterval(ri);ri=null;showToast('提醒已关')}});
+document.getElementById('reminderTime').addEventListener('change',e=>{state.settings.reminderTime=e.target.value;saveData();if(state.settings.reminderEnabled)startRem();showToast('时间已更新')});
+document.getElementById('darkToggle').addEventListener('click',()=>applyTheme(!state.settings.darkMode));
+document.getElementById('exportBtn').addEventListener('click',()=>{const data={v:'3.5',at:new Date().toISOString(),entries:state.entries,goals:state.goals,settings:state.settings};const b=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='思迹_'+gd()+'.json';a.click();URL.revokeObjectURL(b);showToast('✅ 已导出')});
+document.getElementById('clearBtn').addEventListener('click',()=>{if(!confirm('删除所有数据？不可恢复！'))return;if(!confirm('再次确认？'))return;state.entries=[];saveData();rd();showToast('已清除')});
+
+document.addEventListener('keydown',e=>{if(e.target.tagName==='TEXTAREA'||e.target.tagName==='INPUT')return;if(e.key===' '&&state.currentTab==='capture'){e.preventDefault();toggleRec()}});
+
+reqN();if(state.settings.reminderEnabled)startRem();
+(function(){const n=new Date(),cm=n.getHours()*60+n.getMinutes();const[rh,rm]=state.settings.reminderTime.split(':').map(Number);if(Math.abs(cm-(rh*60+rm))<=3&&getToday().length)setTimeout(triggerDaily,2000)})();
+console.log('🧘 思迹 v3.5 · AI ready');
+</script>
+</body>
+</html>
